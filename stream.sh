@@ -1,4 +1,5 @@
 #!/bin/bash
+# stream.sh
 set -e
 
 export DISPLAY=:99
