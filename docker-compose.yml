@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  vnc-desktop:
+    build: .
+    container_name: vnc-desktop
+    ports:
+      - "${VNC_PORT:-5900}:5900"  # VNC port with default 5900
+      - "${NOVNC_PORT:-6080}:6080"  # noVNC port with default 6080
+    environment:
+      - DISPLAY=:${DISPLAY_NUM:-99}
+    restart: unless-stopped
+    volumes:
+      - ./start.sh:/home/myuser/start.sh:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
