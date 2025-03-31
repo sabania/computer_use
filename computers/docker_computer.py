@@ -254,13 +254,29 @@ class DockerComputer(Computer):
 
     def type(self, text: str) -> None:
         """
-        Type the given text via xdotool, preserving spaces and quotes.
+        Type the given text via xdotool, properly handling newlines.
         """
-        # Escape single quotes in the user text: ' -> '\'\''
-        safe_text = text.replace("'", "'\\''")
-        # Then wrap everything in single quotes for xdotool
-        cmd = f"DISPLAY={self.display} xdotool type -- '{safe_text}'"
-        self._exec(cmd)
+        # If text contains newlines, split and handle separately
+        if '\n' in text:
+            lines = text.split('\n')
+            for i, line in enumerate(lines):
+                if i > 0:
+                    # Press Return/Enter for newlines
+                    self._exec(f"DISPLAY={self.display} xdotool key Return")
+                    time.sleep(0.1)  # Small delay after Return
+                
+                if line:  # Only type if there's text in this line
+                    # Escape single quotes in the line text
+                    safe_text = line.replace("'", "'\\''")
+                    # Type the line
+                    cmd = f"DISPLAY={self.display} xdotool type -- '{safe_text}'"
+                    self._exec(cmd)
+                    time.sleep(0.1)  # Small delay after typing
+        else:
+            # Original approach for text without newlines
+            safe_text = text.replace("'", "'\\''")
+            cmd = f"DISPLAY={self.display} xdotool type -- '{safe_text}'"
+            self._exec(cmd)
 
     def wait(self, ms: int = 1000) -> None:
         time.sleep(ms / 1000)

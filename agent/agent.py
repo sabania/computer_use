@@ -6,6 +6,7 @@ from openai.types.responses import ResponseOutputItem
 
 from computers.computer import Computer
 from utils import check_blocklisted_url
+from .prompts import COMPUTER_USER_AGENT_SYSTEM_PROMPT
 
 class Agent:
     """
@@ -21,6 +22,7 @@ class Agent:
         debug=False,
         show_images=False,
         acknowledge_safety_check_callback: Callable = lambda message: True,
+        system_prompt=None,
     ):
         """
         Initialize the agent.
@@ -42,6 +44,7 @@ class Agent:
         self.show_images = show_images
         self.acknowledge_safety_check_callback = acknowledge_safety_check_callback
         self.last_response_id = None
+        self.system_prompt = system_prompt or COMPUTER_USER_AGENT_SYSTEM_PROMPT
         
         # Define tools for computer interaction - simple tool definition for Computer Use
         self.tools = [
@@ -189,7 +192,22 @@ class Agent:
             elif action_type == "screenshot":
                 # No parameters needed for screenshot action
                 params = {}
-                
+            elif action_type == "move":
+                # def move(self, x: int, y: int) -> None:
+                # self._exec(f"DISPLAY={self.display} xdotool mousemove {x} {y}")
+                # Extract x and y coordinates
+                try:
+                    if hasattr(action, "x") and hasattr(action, "y"):
+                        x = action.x
+                        y = action.y
+                    else:
+                        raise ValueError("Could not extract coordinates for move action")
+                    
+                    params = {"x": x, "y": y}
+                except Exception as e:
+                    if self.debug:
+                        print(f"Error extracting move parameters: {e}")
+                    raise e                
             else:
                 if self.debug:
                     print(f"Unknown action type: {action_type}")
@@ -267,6 +285,8 @@ class Agent:
             A generator that yields updates as they are received.
         """
         items = []
+        if not self.last_response_id:
+            items.append({"role": "system", "content": self.system_prompt})
         items.append({"role": "user", "content": user_input})
         continue_conversation = True
 
